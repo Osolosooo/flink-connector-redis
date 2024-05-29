@@ -34,10 +34,7 @@ public class FlinkSingleConfigHandler implements FlinkConfigHandler {
         String host = config.get(RedisOptions.HOST);
         Preconditions.checkNotNull(host, "host should not be null in single mode");
 
-        FlinkSingleConfig.Builder builder =
-                new FlinkSingleConfig.Builder()
-                        .setHost(host)
-                        .setPassword(config.get(RedisOptions.PASSWORD));
+        FlinkSingleConfig.Builder builder = new FlinkSingleConfig.Builder().setHost(host).setPassword(config.get(RedisOptions.PASSWORD));
         builder.setPort(config.get(RedisOptions.PORT));
         builder.setTimeout(config.get(RedisOptions.TIMEOUT))
                 .setDatabase(config.get(RedisOptions.DATABASE));

@@ -1,5 +1,6 @@
 package org.apache.flink.streaming.connectors.redis.table;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.streaming.connectors.redis.common.config.FlinkConfigBase;
@@ -14,6 +15,7 @@ import org.apache.flink.streaming.connectors.redis.common.mapper.RedisDataType;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisOperationType;
 import org.apache.flink.streaming.connectors.redis.common.mapper.RedisSinkMapper;
 import org.apache.flink.table.catalog.ResolvedSchema;
+import org.apache.flink.table.catalog.UniqueConstraint;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 import org.apache.flink.types.RowKind;
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @param <IN>
@@ -37,23 +40,25 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
     protected Integer ttl;
     protected int expireTimeSeconds = -1;
 
-    private RedisSinkMapper<IN> redisSinkMapper;
-    private RedisCommand redisCommand;
+    private final RedisSinkMapper<IN> redisSinkMapper;
+    private final RedisCommand redisCommand;
 
-    private FlinkConfigBase flinkConfigBase;
+    private final FlinkConfigBase flinkConfigBase;
     private RedisCommandsContainer redisCommandsContainer;
 
     private final int maxRetryTimes;
-    private List<DataType> columnDataTypes;
+    private final List<DataType> columnDataTypes;
 
-    private RedisValueDataStructure redisValueDataStructure;
+    private final String additionalKey;
+
+    private final RedisValueDataStructure redisValueDataStructure;
 
     /**
      * Creates a new {@link RedisSinkFunction} that connects to the Redis server.
      *
      * @param flinkConfigBase The configuration of {@link FlinkConfigBase}
      * @param redisSinkMapper This is used to generate Redis command and key value from incoming
-     *     elements.
+     *                        elements.
      */
     public RedisSinkFunction(
             FlinkConfigBase flinkConfigBase,
@@ -65,6 +70,12 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
 
         this.flinkConfigBase = flinkConfigBase;
         this.maxRetryTimes = redisSinkOptions.getMaxRetryTimes();
+        this.additionalKey = redisSinkOptions.getAdditionalKey();
+
+//        if (resolvedSchema.getPrimaryKey().isPresent() ) {
+//            UniqueConstraint uniqueConstraint = resolvedSchema.getPrimaryKey().get();
+//        }
+
         this.redisSinkMapper = redisSinkMapper;
         RedisCommandDescription redisCommandDescription =
                 (RedisCommandDescription) redisSinkMapper.getCommandDescription();
@@ -104,9 +115,7 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
 
         String[] params = new String[calcParamNumByCommand()];
         for (int i = 0; i < params.length; i++) {
-            params[i] =
-                    redisSinkMapper.getKeyFromData(
-                            rowData, columnDataTypes.get(i).getLogicalType(), i);
+            params[i] = redisSinkMapper.getKeyFromData(rowData, columnDataTypes.get(i).getLogicalType(), i);
         }
 
         // the value is taken from the entire row when redisValueFromType is row, and columns
@@ -115,6 +124,11 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
             params[params.length - 1] = serializeWholeRow(rowData);
         }
 
+
+        // additional-key 生效
+/*        if (StringUtils.isNotBlank(additionalKey)) {
+            params[0] = additionalKey + params[0];
+        }*/
         startSink(params);
     }
 
@@ -137,7 +151,7 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
                 if (i >= this.maxRetryTimes) {
                     throw new RuntimeException("sink redis error ", e1);
                 }
-                Thread.sleep(500 * i);
+                Thread.sleep(500L * i);
             }
         }
     }
@@ -183,17 +197,17 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
                 this.redisCommandsContainer.hset(params[0], params[1], params[2]);
                 break;
             case HINCRBY:
-                this.redisCommandsContainer.hincrBy(params[0], params[1], Long.valueOf(params[2]));
+                this.redisCommandsContainer.hincrBy(params[0], params[1], Long.parseLong(params[2]));
                 break;
             case HINCRBYFLOAT:
                 this.redisCommandsContainer.hincrByFloat(
-                        params[0], params[1], Double.valueOf(params[2]));
+                        params[0], params[1], Double.parseDouble(params[2]));
                 break;
             case INCRBY:
-                this.redisCommandsContainer.incrBy(params[0], Long.valueOf(params[1]));
+                this.redisCommandsContainer.incrBy(params[0], Long.parseLong(params[1]));
                 break;
             case INCRBYFLOAT:
-                this.redisCommandsContainer.incrByFloat(params[0], Double.valueOf(params[1]));
+                this.redisCommandsContainer.incrByFloat(params[0], Double.parseDouble(params[1]));
                 break;
             case DECRBY:
                 this.redisCommandsContainer.decrBy(params[0], Long.valueOf(params[1]));
@@ -219,11 +233,7 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
         if (expireTimeSeconds != -1) {
             if (this.redisCommandsContainer.getTTL(key).get() == -1) {
                 int now = LocalTime.now().toSecondOfDay();
-                this.redisCommandsContainer.expire(
-                        key,
-                        expireTimeSeconds > now
-                                ? expireTimeSeconds - now
-                                : 86400 + expireTimeSeconds - now);
+                this.redisCommandsContainer.expire(key, expireTimeSeconds > now ? expireTimeSeconds - now : 86400 + expireTimeSeconds - now);
             }
         } else if (ttl != null) {
             this.redisCommandsContainer.expire(key, ttl);
@@ -239,9 +249,7 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
     private String serializeWholeRow(RowData rowData) {
         StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < columnDataTypes.size(); i++) {
-            stringBuilder.append(
-                    RedisRowConverter.rowDataToString(
-                            columnDataTypes.get(i).getLogicalType(), rowData, i));
+            stringBuilder.append(RedisRowConverter.rowDataToString(columnDataTypes.get(i).getLogicalType(), rowData, i));
             if (i != columnDataTypes.size() - 1) {
                 stringBuilder.append(RedisDynamicTableFactory.CACHE_SEPERATOR);
             }
@@ -280,7 +288,7 @@ public class RedisSinkFunction<IN> extends RichSinkFunction<IN> {
         try {
             this.redisCommandsContainer = RedisCommandsContainerBuilder.build(this.flinkConfigBase);
             this.redisCommandsContainer.open();
-            LOG.info("{} success to create redis container:{}", Thread.currentThread().getId());
+            LOG.info("success to create redis container:{}", Thread.currentThread().getId());
         } catch (Exception e) {
             LOG.error("Redis has not been properly initialized: ", e);
             throw e;

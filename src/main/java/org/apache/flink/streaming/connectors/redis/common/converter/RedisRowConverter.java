@@ -86,7 +86,7 @@ public class RedisRowConverter {
                                     precision, TIMESTAMP_PRECISION_MIN, TIMESTAMP_PRECISION_MAX));
                 }
                 return result -> {
-                    long milliseconds = Long.valueOf(result);
+                    long milliseconds = Long.parseLong(result);
                     return TimestampData.fromEpochMillis(milliseconds);
                 };
             default:

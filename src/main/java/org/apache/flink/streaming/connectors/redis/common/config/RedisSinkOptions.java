@@ -1,27 +1,39 @@
 package org.apache.flink.streaming.connectors.redis.common.config;
 
-/** sink options. @Author: Jeff Zou @Date: 2022/9/28 16:36 */
+/**
+ * sink options. @Author: Jeff Zou @Date: 2022/9/28 16:36
+ */
 public class RedisSinkOptions {
     private final int maxRetryTimes;
 
+    private final String additionalKey;
     private final RedisValueDataStructure redisValueDataStructure;
 
     public int getMaxRetryTimes() {
         return maxRetryTimes;
     }
 
+    public String getAdditionalKey() {
+        return additionalKey;
+    }
+
     public RedisValueDataStructure getRedisValueDataStructure() {
         return redisValueDataStructure;
     }
 
-    public RedisSinkOptions(int maxRetryTimes, RedisValueDataStructure redisValueDataStructure) {
+    public RedisSinkOptions(int maxRetryTimes, RedisValueDataStructure redisValueDataStructure, String additionalKey) {
         this.maxRetryTimes = maxRetryTimes;
+        this.additionalKey = additionalKey;
         this.redisValueDataStructure = redisValueDataStructure;
     }
 
-    /** RedisSinkOptions.Builder. */
+    /**
+     * RedisSinkOptions.Builder.
+     */
     public static class Builder {
         private int maxRetryTimes;
+
+        private String additionalKey;
 
         private RedisValueDataStructure redisValueDataStructure;
 
@@ -35,8 +47,14 @@ public class RedisSinkOptions {
             return this;
         }
 
+
+        public Builder setAdditionalKey(String additionalKey) {
+            this.additionalKey = additionalKey;
+            return this;
+        }
+
         public RedisSinkOptions build() {
-            return new RedisSinkOptions(maxRetryTimes, redisValueDataStructure);
+            return new RedisSinkOptions(maxRetryTimes, redisValueDataStructure, additionalKey);
         }
     }
 }

@@ -3,10 +3,13 @@ package org.apache.flink.streaming.connectors.redis.common.config;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 
-/** Created by jeff.zou on 2020/9/10. */
+/**
+ * Created by jeff.zou on 2020/9/10.
+ */
 public class RedisOptions {
 
-    private RedisOptions() {}
+    private RedisOptions() {
+    }
 
     public static final ConfigOption<Integer> TIMEOUT =
             ConfigOptions.key("timeout")
@@ -170,4 +173,11 @@ public class RedisOptions {
                     .stringType()
                     .noDefaultValue()
                     .withDescription("Optional redis key expire on time, eg: 10:00 12:12:01");
+
+    public static final ConfigOption<String> ADDITIONAL_KEY =
+            ConfigOptions.key("additional-key")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("additional key");
+
 }

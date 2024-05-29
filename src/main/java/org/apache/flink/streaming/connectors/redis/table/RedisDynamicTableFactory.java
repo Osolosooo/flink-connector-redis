@@ -14,7 +14,9 @@ import java.util.Set;
 
 import static org.apache.flink.streaming.connectors.redis.descriptor.RedisValidator.REDIS_COMMAND;
 
-/** Created by jeff.zou on 2020/9/10. */
+/**
+ * Created by jeff.zou on 2020/9/10.
+ */
 public class RedisDynamicTableFactory
         implements DynamicTableSinkFactory, DynamicTableSourceFactory {
 
@@ -24,20 +26,7 @@ public class RedisDynamicTableFactory
 
     @Override
     public DynamicTableSource createDynamicTableSource(Context context) {
-        if (context.getCatalogTable().getOptions().containsKey(REDIS_COMMAND)) {
-            context.getCatalogTable()
-                    .getOptions()
-                    .put(
-                            REDIS_COMMAND,
-                            context.getCatalogTable()
-                                    .getOptions()
-                                    .get(REDIS_COMMAND)
-                                    .toUpperCase());
-        }
-        FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
-        ReadableConfig config = helper.getOptions();
-        helper.validate();
-        validateConfigOptions(config);
+        ReadableConfig config = validateConfig(context);
         return new RedisDynamicTableSource(
                 context.getCatalogTable().getOptions(),
                 context.getCatalogTable().getResolvedSchema(),
@@ -46,25 +35,26 @@ public class RedisDynamicTableFactory
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
-        if (context.getCatalogTable().getOptions().containsKey(REDIS_COMMAND)) {
-            context.getCatalogTable()
-                    .getOptions()
-                    .put(
-                            REDIS_COMMAND,
-                            context.getCatalogTable()
-                                    .getOptions()
-                                    .get(REDIS_COMMAND)
-                                    .toUpperCase());
-        }
-        FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
-        ReadableConfig config = helper.getOptions();
-        helper.validate();
-        validateConfigOptions(config);
+        ReadableConfig config = validateConfig(context);
         return new RedisDynamicTableSink(
                 context.getCatalogTable().getOptions(),
                 context.getCatalogTable().getResolvedSchema(),
                 config);
     }
+
+
+    protected ReadableConfig validateConfig(Context context) {
+        if (context.getCatalogTable().getOptions().containsKey(REDIS_COMMAND)) {
+            context.getCatalogTable().getOptions().put(REDIS_COMMAND, context.getCatalogTable().getOptions().get(REDIS_COMMAND).toUpperCase());
+        }
+        FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
+        ReadableConfig config = helper.getOptions();
+        helper.validate();
+        validateConfigOptions(config);
+
+        return config;
+    }
+
 
     @Override
     public String factoryIdentifier() {
@@ -106,8 +96,10 @@ public class RedisDynamicTableFactory
         options.add(RedisOptions.REDIS_MASTER_NAME);
         options.add(RedisOptions.SENTINELS_INFO);
         options.add(RedisOptions.EXPIRE_ON_TIME);
+        options.add(RedisOptions.ADDITIONAL_KEY);
         return options;
     }
 
-    private void validateConfigOptions(ReadableConfig config) {}
+    private void validateConfigOptions(ReadableConfig config) {
+    }
 }

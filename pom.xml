@@ -28,16 +28,17 @@ under the License.
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <flink.version>1.17.0</flink.version>
+        <flink.version>1.16.1</flink.version>
         <scala.binary.version>2.12</scala.binary.version>
         <slf4j.version>1.7.15</slf4j.version>
         <maven.shade.version>3.2.4</maven.shade.version>
+        <jar.scope>provided</jar.scope>
     </properties>
 
 
-    <groupId>io.github.jeff-zou</groupId>
+    <groupId>org.apache.flink</groupId>
     <artifactId>flink-connector-redis</artifactId>
-    <version>1.2.7</version>
+    <version>1.16.1</version>
     <packaging>jar</packaging>
 
 
@@ -52,20 +53,20 @@ under the License.
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-java</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-api-java-bridge</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-planner_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
 
 
@@ -82,19 +83,19 @@ under the License.
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-api-java</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-streaming-scala_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
         <!-- <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-planner-blink_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency> -->
 
         <!-- Either... -->
@@ -102,13 +103,13 @@ under the License.
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-api-java-bridge</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-common</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
+            <scope>${jar.scope}</scope>
         </dependency>
 
  <!--       <dependency>
